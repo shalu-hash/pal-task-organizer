@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import TaskCard from './TaskCard';
 import TaskForm from './TaskForm';
-import { Task } from '../types';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import {
