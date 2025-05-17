@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -51,7 +52,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     defaultValues: {
       title: task?.title || '',
       description: task?.description || '',
-      due_date: task?.due_date ? new Date(task.due_date) : null,
+      due_date: task?.due_date ? new Date(task.due_date) : (task?.dueDate ? new Date(task.dueDate) : null),
       weight: task?.weight || 3,
       parent_id: task?.parent_id || parentId,
     },

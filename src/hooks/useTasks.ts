@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Task, TaskFormData } from '../types';
 import { calculatePriority } from '../lib/priorityUtils';
 import { toast } from 'sonner';
+import { useAuth } from './useAuth';
 
 // Helper function to build task hierarchy
 const buildTaskHierarchy = (tasks: Task[]): Task[] => {
@@ -13,7 +14,7 @@ const buildTaskHierarchy = (tasks: Task[]): Task[] => {
   // First pass: Create task map
   tasks.forEach(task => {
     // Calculate priority score and days remaining
-    const { score, daysRemaining } = calculatePriority(task.weight, task.due_date);
+    const { score, daysRemaining } = calculatePriority(task.weight || 3, task.due_date || task.dueDate);
     task.priority_score = score;
     task.days_remaining = daysRemaining;
     task.children = [];
@@ -25,8 +26,8 @@ const buildTaskHierarchy = (tasks: Task[]): Task[] => {
   tasks.forEach(task => {
     if (task.parent_id === null) {
       rootTasks.push(task);
-    } else if (taskMap[task.parent_id]) {
-      taskMap[task.parent_id].children!.push(task);
+    } else if (taskMap[task.parent_id || '']) {
+      taskMap[task.parent_id || ''].children!.push(task);
     }
   });
 
@@ -35,6 +36,7 @@ const buildTaskHierarchy = (tasks: Task[]): Task[] => {
 
 export const useTasks = (enableQuery = true) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // Fetch all tasks for current user
   const { data: tasks, isLoading, error } = useQuery({
@@ -43,6 +45,7 @@ export const useTasks = (enableQuery = true) => {
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
+        .eq('userId', user?.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -51,15 +54,25 @@ export const useTasks = (enableQuery = true) => {
 
       return data as Task[];
     },
-    enabled: enableQuery,
+    enabled: enableQuery && !!user,
   });
 
   // Create a new task
   const createTask = useMutation({
     mutationFn: async (taskData: TaskFormData) => {
+      // Add the current user ID to the task data
+      const newTaskData = {
+        ...taskData,
+        userId: user?.id,
+        completed: false, 
+        priority: 'medium',
+        dueDate: taskData.due_date,
+        // Ensure we're matching the table structure in Supabase
+      };
+      
       const { data, error } = await supabase
         .from('tasks')
-        .insert([taskData])
+        .insert([newTaskData])
         .select()
         .single();
 
@@ -74,6 +87,7 @@ export const useTasks = (enableQuery = true) => {
       toast.success('Task created successfully');
     },
     onError: (error: any) => {
+      console.error("Task creation error:", error);
       toast.error(`Failed to create task: ${error.message}`);
     },
   });
@@ -81,9 +95,14 @@ export const useTasks = (enableQuery = true) => {
   // Update a task
   const updateTask = useMutation({
     mutationFn: async ({ id, ...taskData }: TaskFormData & { id: string }) => {
+      const updatedData = {
+        ...taskData,
+        dueDate: taskData.due_date,
+      };
+      
       const { data, error } = await supabase
         .from('tasks')
-        .update(taskData)
+        .update(updatedData)
         .eq('id', id)
         .select()
         .single();
@@ -170,7 +189,7 @@ export const useTasks = (enableQuery = true) => {
 
   // Get flat list of all tasks with priority scores
   const allTasksFlat = tasks ? tasks.map(task => {
-    const { score, daysRemaining } = calculatePriority(task.weight, task.due_date);
+    const { score, daysRemaining } = calculatePriority(task.weight || 3, task.due_date || task.dueDate);
     return {
       ...task,
       priority_score: score,
@@ -186,9 +205,9 @@ export const useTasks = (enableQuery = true) => {
     if (!tasks) return [];
     
     return tasks.filter(task => {
-      if (!task.due_date) return false;
+      if (!task.due_date && !task.dueDate) return false;
       
-      const dueDate = new Date(task.due_date);
+      const dueDate = new Date(task.due_date || task.dueDate || '');
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
