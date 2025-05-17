@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -59,11 +58,16 @@ const TaskForm: React.FC<TaskFormProps> = ({
   });
 
   const handleSubmit = (data: z.infer<typeof taskSchema>) => {
-    onSubmit({
-      ...data,
+    // Ensure we're creating a valid TaskFormData object with all required fields
+    const taskData: TaskFormData = {
+      title: data.title,
       description: data.description || '',
       due_date: data.due_date ? format(data.due_date, 'yyyy-MM-dd') : null,
-    });
+      weight: data.weight,
+      parent_id: data.parent_id,
+    };
+    
+    onSubmit(taskData);
   };
 
   return (
