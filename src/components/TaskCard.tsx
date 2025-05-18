@@ -111,12 +111,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 </button>
                 
                 {hasChildren && (
-                  <CollapsibleTrigger
-                    onClick={() => setIsOpen(!isOpen)}
-                    className="p-1 rounded-md hover:bg-accent hover:text-accent-foreground"
-                  >
-                    {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </CollapsibleTrigger>
+                  // IMPORTANT: Wrap in Collapsible component to provide context
+                  <Collapsible open={isOpen} onOpenChange={setIsOpen} className="inline-flex">
+                    <CollapsibleTrigger
+                      className="p-1 rounded-md hover:bg-accent hover:text-accent-foreground"
+                    >
+                      {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </CollapsibleTrigger>
+                  </Collapsible>
                 )}
                 
                 <h3 className="font-medium">{task.title}</h3>
