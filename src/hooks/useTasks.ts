@@ -45,7 +45,7 @@ export const useTasks = (enableQuery = true) => {
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
-        .eq('userId', user?.id)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -63,11 +63,9 @@ export const useTasks = (enableQuery = true) => {
       // Add the current user ID to the task data
       const newTaskData = {
         ...taskData,
-        userId: user?.id,
+        user_id: user?.id,
         completed: false, 
         priority: 'medium',
-        dueDate: taskData.due_date,
-        // Ensure we're matching the table structure in Supabase
       };
       
       const { data, error } = await supabase
@@ -95,14 +93,9 @@ export const useTasks = (enableQuery = true) => {
   // Update a task
   const updateTask = useMutation({
     mutationFn: async ({ id, ...taskData }: TaskFormData & { id: string }) => {
-      const updatedData = {
-        ...taskData,
-        dueDate: taskData.due_date,
-      };
-      
       const { data, error } = await supabase
         .from('tasks')
-        .update(updatedData)
+        .update(taskData)
         .eq('id', id)
         .select()
         .single();

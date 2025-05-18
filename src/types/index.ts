@@ -11,14 +11,17 @@ export interface Task {
   description?: string;
   completed: boolean;
   priority: 'low' | 'medium' | 'high';
-  dueDate?: string;
-  userId: string;
+  due_date?: string;
+  user_id: string;
   parent_id?: string | null;
   weight?: number;
-  due_date?: string | null; // for backward compatibility
   priority_score?: number;
   days_remaining?: number;
   children?: Task[];
+  
+  // For backward compatibility
+  dueDate?: string; 
+  userId?: string;
 }
 
 export type ViewMode = 'list' | 'calendar';
@@ -28,10 +31,13 @@ export interface TaskFormData {
   title: string;
   description: string;
   due_date: string | null;
-  dueDate?: string | null;
   weight: number;
   parent_id: string | null;
-  userId?: string;
+  user_id?: string;
   priority?: 'low' | 'medium' | 'high';
   completed?: boolean;
+  
+  // For backward compatibility
+  dueDate?: string | null;
+  userId?: string;
 }
