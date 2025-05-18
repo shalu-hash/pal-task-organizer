@@ -62,9 +62,13 @@ export const useTasks = (enableQuery = true) => {
     mutationFn: async (taskData: TaskFormData) => {
       // Add the current user ID to the task data
       const newTaskData = {
-        ...taskData,
+        title: taskData.title,
+        description: taskData.description,
+        due_date: taskData.due_date,
+        weight: taskData.weight,
+        parent_id: taskData.parent_id,
         user_id: user?.id,
-        completed: false, 
+        completed: false,
         priority: 'medium',
       };
       
