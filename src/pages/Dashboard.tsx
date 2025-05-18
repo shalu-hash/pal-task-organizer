@@ -9,11 +9,23 @@ import Navbar from '../components/Navbar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { ViewMode } from '../types';
+import TaskFilter, { TaskFilters } from '../components/TaskFilter';
+import { Task } from '../types';
+import { format } from 'date-fns';
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [searchParams] = useSearchParams();
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  
+  const [filters, setFilters] = useState<TaskFilters>({
+    showCompleted: true,
+    dueDateFrom: null,
+    dueDateTo: null,
+    priorityLevels: ['low', 'medium', 'high'],
+    weightRange: [1, 5]
+  });
   
   const {
     tasks,
@@ -26,6 +38,45 @@ const Dashboard = () => {
     deleteTask,
     updateTaskParent,
   } = useTasks(!authLoading && !!user);
+
+  // Filter tasks based on current filters
+  const filteredTasks = React.useMemo(() => {
+    if (!allTasksFlat) return [];
+    
+    return allTasksFlat.filter(task => {
+      // Filter by completion status
+      if (!filters.showCompleted && task.completed) {
+        return false;
+      }
+      
+      // Filter by priority
+      if (!filters.priorityLevels.includes(task.priority)) {
+        return false;
+      }
+      
+      // Filter by due date range
+      if (filters.dueDateFrom && task.due_date) {
+        const taskDate = new Date(task.due_date);
+        if (taskDate < filters.dueDateFrom) {
+          return false;
+        }
+      }
+      
+      if (filters.dueDateTo && task.due_date) {
+        const taskDate = new Date(task.due_date);
+        if (taskDate > filters.dueDateTo) {
+          return false;
+        }
+      }
+      
+      // Filter by weight range
+      if (task.weight && (task.weight < filters.weightRange[0] || task.weight > filters.weightRange[1])) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [allTasksFlat, filters]);
 
   // Show notifications for tasks due today or tomorrow
   useEffect(() => {
@@ -45,9 +96,7 @@ const Dashboard = () => {
   useEffect(() => {
     const taskId = searchParams.get('task');
     if (taskId) {
-      // Implement task selection logic if needed
-      console.log('Selected task ID:', taskId);
-      // Could scroll to task, open edit modal, etc.
+      setSelectedTaskId(taskId);
     }
   }, [searchParams]);
 
@@ -114,10 +163,14 @@ const Dashboard = () => {
         <div className="mb-6">
           <Tabs defaultValue={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
             <div className="flex items-center justify-between mb-4">
-              <TabsList>
-                <TabsTrigger value="list">List View</TabsTrigger>
-                <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-              </TabsList>
+              <div className="flex items-center space-x-4">
+                <TabsList>
+                  <TabsTrigger value="list">List View</TabsTrigger>
+                  <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+                </TabsList>
+                
+                <TaskFilter onFilterChange={setFilters} />
+              </div>
 
               <button
                 onClick={handleGoogleCalendarSync}
@@ -140,7 +193,7 @@ const Dashboard = () => {
 
             <TabsContent value="calendar" className="mt-0">
               <TaskCalendar
-                tasks={allTasksFlat}
+                tasks={filteredTasks}
                 onUpdateTask={handleUpdateTask}
               />
             </TabsContent>

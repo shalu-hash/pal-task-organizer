@@ -55,5 +55,39 @@ export const getPriorityColor = (score: number): string => {
  * Format the priority score to be displayed
  */
 export const formatPriorityScore = (score: number): string => {
-  return score.toFixed(2);
+  return score.toFixed(1);
+};
+
+/**
+ * A useful function for determining due soon tasks
+ */
+export const isTaskDueSoon = (dueDate: string | null): boolean => {
+  if (!dueDate) return false;
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  const due = new Date(dueDate);
+  due.setHours(0, 0, 0, 0);
+  
+  return (
+    due.getTime() === today.getTime() || 
+    due.getTime() === tomorrow.getTime()
+  );
+};
+
+/**
+ * Sort tasks by priority score (highest first)
+ */
+export const sortTasksByPriority = (tasks: any[]): any[] => {
+  return [...tasks].sort((a, b) => {
+    // Sort by priority score (high to low)
+    const scoreA = a.priority_score || 0;
+    const scoreB = b.priority_score || 0;
+    
+    return scoreB - scoreA;
+  });
 };

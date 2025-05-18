@@ -94,12 +94,31 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
+  /* Task indentation styles with visual connectors */
   .task-indent {
-    @apply border-l-2 border-l-gray-200 dark:border-l-gray-700 pl-4 ml-4;
+    @apply border-l-2 border-l-gray-200 dark:border-l-gray-700 pl-5 ml-5;
+    position: relative;
+  }
+
+  .task-indent::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: -10px;
+    width: 16px;
+    height: 12px;
+    border-bottom-left-radius: 6px;
+    border-left: 2px solid;
+    border-bottom: 2px solid;
+    @apply border-gray-200 dark:border-gray-700;
   }
 
   .task-indent-0 {
     @apply ml-0 pl-0 border-l-0;
+  }
+
+  .task-indent-0::before {
+    display: none;
   }
 
   .task-indent-1 {
@@ -107,18 +126,70 @@
   }
 
   .task-indent-2 {
-    @apply task-indent ml-8 pl-4;
+    @apply task-indent ml-10 pl-5;
   }
 
   .task-indent-3 {
-    @apply task-indent ml-12 pl-4;
+    @apply task-indent ml-15 pl-5;
   }
 
   .task-indent-4 {
-    @apply task-indent ml-16 pl-4;
+    @apply task-indent ml-20 pl-5;
   }
 
   .task-indent-5 {
-    @apply task-indent ml-20 pl-4;
+    @apply task-indent ml-25 pl-5;
+  }
+  
+  /* Priority colors */
+  .text-priority-low {
+    @apply text-green-500;
+  }
+  
+  .text-priority-medium {
+    @apply text-amber-500;
+  }
+  
+  .text-priority-high {
+    @apply text-red-500;
+  }
+  
+  .bg-priority-low {
+    @apply bg-green-500;
+  }
+  
+  .bg-priority-medium {
+    @apply bg-amber-500;
+  }
+  
+  .bg-priority-high {
+    @apply bg-red-500;
+  }
+  
+  /* Drag and drop styles */
+  [data-dnd-draggable="true"] {
+    @apply cursor-grab;
+  }
+  
+  [data-dnd-draggable="true"]:active {
+    @apply cursor-grabbing;
+  }
+}
+
+@layer utilities {
+  .ml-10 {
+    margin-left: 2.5rem;
+  }
+  
+  .ml-15 {
+    margin-left: 3.75rem;
+  }
+  
+  .ml-20 {
+    margin-left: 5rem;
+  }
+  
+  .ml-25 {
+    margin-left: 6.25rem;
   }
 }

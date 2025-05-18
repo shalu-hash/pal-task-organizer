@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import TaskCard from './TaskCard';
 import TaskForm from './TaskForm';
@@ -13,6 +12,9 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
+  DragOverEvent,
+  UniqueIdentifier,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -40,22 +42,88 @@ const TaskList: React.FC<TaskListProps> = ({
   onUpdateTaskParent,
 }) => {
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
-
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
+  
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required before activation
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
+  // Helper to find a task by ID in the nested structure
+  const findTaskById = (tasks: Task[], id: string): Task | null => {
+    for (const task of tasks) {
+      if (task.id === id) return task;
+      if (task.children && task.children.length > 0) {
+        const found = findTaskById(task.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // Helper to find a task's parent
+  const findParentTask = (tasks: Task[], childId: string): Task | null => {
+    for (const task of tasks) {
+      if (task.children && task.children.some(child => child.id === childId)) {
+        return task;
+      }
+      if (task.children && task.children.length > 0) {
+        const found = findParentTask(task.children, childId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // Event handlers for drag and drop
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    if (!event.over) return;
+    setHoveredTaskId(event.over.id.toString());
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
+    setHoveredTaskId(null);
+    
     const { active, over } = event;
     
-    if (over && active.id !== over.id) {
-      // This is a simplified example. In a real app, you'd need to handle
-      // hierarchy changes more carefully, checking for cycles, etc.
-      onUpdateTaskParent(active.id.toString(), over.id.toString());
+    if (!over || active.id === over.id) return;
+    
+    const activeTaskId = active.id.toString();
+    const overTaskId = over.id.toString();
+    
+    // If dropping onto the same parent or root level, just reorder
+    // Otherwise, change the parent
+    const parentTask = findParentTask(tasks, activeTaskId);
+    
+    // If dropping onto another task, make it a child of that task
+    const overTask = findTaskById(tasks, overTaskId);
+    if (overTask) {
+      onUpdateTaskParent(activeTaskId, overTaskId);
+      return;
     }
+    
+    // If dropping at root level and it wasn't already at root
+    if (!parentTask) {
+      onUpdateTaskParent(activeTaskId, null);
+    }
+  };
+  
+  const handleMoveTask = (taskId: string, direction: 'up' | 'down') => {
+    // Implementation for manual reordering 
+    // This would require additional tracking of task positions in the database
+    console.log(`Move task ${taskId} ${direction}`);
   };
 
   const renderTaskHierarchy = (taskList: Task[]) => {
@@ -66,10 +134,9 @@ const TaskList: React.FC<TaskListProps> = ({
         onUpdate={onUpdateTask}
         onDelete={onDeleteTask}
         onAddSubtask={onCreateTask}
-        onMoveTask={(taskId, direction) => {
-          // Handle task reordering here
-          console.log(`Move task ${taskId} ${direction}`);
-        }}
+        onMoveTask={handleMoveTask}
+        isDragging={activeId === task.id}
+        isHovered={hoveredTaskId === task.id}
       />
     ));
   };
@@ -104,6 +171,8 @@ const TaskList: React.FC<TaskListProps> = ({
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
         <SortableContext
